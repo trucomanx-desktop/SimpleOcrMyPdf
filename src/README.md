@@ -2,7 +2,7 @@
 
 Simple GUI for ocrmypdf
 
-![logo](screenshot.png)
+![logo](https://raw.githubusercontent.com/trucomanx/SimpleOcrMyPdf/main/screenshot.png)
 
 ## 0. dependencies
 
@@ -14,7 +14,7 @@ sudo apt-get install ocrmypdf
 
 ## 1. Installing
 
-To install the package from `PyPI`, follow the instructions below:
+To install the package from [PyPI](https://pypi.org/project/simple-ocrmypdf/), follow the instructions below:
 
 
 ```bash
@@ -32,7 +32,7 @@ simple-ocrmypdf
 ```
 ## 2. More information
 
-If you want more information [README.extras.md](https://github.com/trucomanx/SimpleOcrMyPdf/blob/main/README.extras.md)
+If you want more information go to [doc](https://github.com/trucomanx/SimpleOcrMyPdf/tree/main/doc) directory.
 
 ## 3. Buy me a coffee
 

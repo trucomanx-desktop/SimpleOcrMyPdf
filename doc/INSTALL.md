@@ -2,23 +2,6 @@
 
 Simple GUI for ocrmypdf
 
-## Testar program
-
-```bash
-cd src
-python3 -m simple_ocrmypdf.program
-```
-
-## Upload to PYPI
-
-```bash
-pip install --upgrade pkginfo twine packaging
-
-cd src
-python -m build
-twine upload dist/*
-```
-
 ## Install from PYPI
 
 The homepage in pipy is https://pypi.org/project/simple-ocrmypdf/
