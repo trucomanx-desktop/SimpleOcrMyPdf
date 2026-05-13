@@ -20,7 +20,7 @@ simple-ocrmypdf
 Installing `simple-ocrmypdf` program
 
 ```bash
-git clone https://github.com/trucomanx/SimpleOcrMyPdf.git
+git clone https://github.com/trucomanx-desktop/SimpleOcrMyPdf.git
 cd SimpleOcrMyPdf
 pip install -r requirements.txt
 cd src
