@@ -1,28 +1,37 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QMessageBox, 
-    QFileDialog, QLabel, QTextEdit, QStatusBar, QToolBar, QAction
+    QFileDialog, QLabel, QStatusBar, QToolBar, QAction
 )
 from PyQt5.QtCore import Qt, QThread, QUrl
 from PyQt5.QtGui import QIcon, QDesktopServices
 
 import subprocess
 import signal
+import shutil
 import os
 
 
 import simple_ocrmypdf.about as about
-from simple_ocrmypdf.modules.wabout   import show_about_window
-from simple_ocrmypdf.desktop import create_desktop_file, create_desktop_directory, create_desktop_menu
+from simple_ocrmypdf.modules.resources import resource_path
+from simple_ocrmypdf.modules.wabout    import show_about_window
+from simple_ocrmypdf.desktop import create_desktop_file
+from simple_ocrmypdf.desktop import create_desktop_directory
+from simple_ocrmypdf.desktop import create_desktop_menu
 
 #sudo apt install ocrmypdf
 
 
 
 def exec_ocrmypdf(input_path: str, output_path: str) -> tuple[str, str]:
+    ocrmypdf_cmd = shutil.which("ocrmypdf")
+
+    if not ocrmypdf_cmd:
+        return "", "Error: ocrmypdf was not found in PATH. Ex.: sudo apt install ocrmypdf"
+    
     try:
         result = subprocess.run(
-            ["ocrmypdf", input_path, output_path],
+            [ocrmypdf_cmd, "--skip-text", input_path, output_path],
             capture_output=True,
             text=True,
             check=True
@@ -32,7 +41,7 @@ def exec_ocrmypdf(input_path: str, output_path: str) -> tuple[str, str]:
         # Mesmo em caso de erro, retornamos as saídas para depuração
         return e.stdout, e.stderr
     except FileNotFoundError:
-        return "", "Erro: ocrmypdf não está instalado ou não está no PATH."
+        return "", "Error: ocrmypdf is not installed or is not in the PATH."
 
 
 def add_ocr_in_name(pdf_path: str) -> str:
@@ -44,13 +53,13 @@ class WorkerThread(QThread):
     def __init__(self, input_path, output_path):
         super().__init__() 
         self.input_path = input_path
-        self.outputt_path = output_path
+        self.output_path = output_path
         self.output_std = ""
         self.output_err = ""
         
     def run(self):
         self.output_std, self.output_err = exec_ocrmypdf(   self.input_path,
-                                                            self.outputt_path)
+                                                            self.output_path)
 
     
 class DragDropArea(QLabel):
@@ -92,9 +101,8 @@ class MainWindow(QMainWindow):
 
         ## Icon
         # Get base directory for icons
-        base_dir_path = os.path.dirname(os.path.abspath(__file__))
-        icon_path = os.path.join(base_dir_path, 'icons', 'logo.png')
-        self.setWindowIcon(QIcon(icon_path)) 
+        self.icon_path = resource_path('icons', 'logo.png')
+        self.setWindowIcon(QIcon(self.icon_path)) 
 
         # Toolbar
         toolbar = QToolBar("Main Toolbar")
@@ -102,13 +110,13 @@ class MainWindow(QMainWindow):
         toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
 
         # Coffee
-        coffee_action = QAction(QIcon.fromTheme("emblem-favorite"),"Coffee", self)
+        coffee_action = QAction(QIcon(resource_path('icons', 'emote-love.png')),"Coffee", self)
         coffee_action.setToolTip("Buy me a coffee (TrucomanX)")
         coffee_action.triggered.connect(self.on_coffee_action_click)
         toolbar.addAction(coffee_action)
                 
         # About
-        about_action = QAction(QIcon.fromTheme("help-about"),"About", self)
+        about_action = QAction(QIcon(resource_path('icons', 'status_help.png')),"About", self)
         about_action.setToolTip("About the program")
         about_action.triggered.connect(self.show_about)
         toolbar.addAction(about_action)
@@ -118,7 +126,7 @@ class MainWindow(QMainWindow):
         # Select
         self.select_button = QPushButton("Select PDF or IMAGE file")
         self.select_button.setToolTip("Select the file that needs to be OCR applied.")
-        self.select_button.setIcon(QIcon.fromTheme("x-office-document-template"))
+        self.select_button.setIcon(QIcon(resource_path('icons', 'edit_file.png')))
         self.select_button.clicked.connect(self.select_file)
 
         # Drag and drop
@@ -127,7 +135,7 @@ class MainWindow(QMainWindow):
         # Print
         self.save_button = QPushButton("Save OCR file")
         self.save_button.setToolTip("Save the file with OCR (Optical Character Recognition) applied.")
-        self.save_button.setIcon(QIcon.fromTheme("document-save-as"))
+        self.save_button.setIcon(QIcon(resource_path('icons', 'download-green.png')))
         self.save_button.clicked.connect(self.print_file)
 
 
@@ -177,10 +185,7 @@ class MainWindow(QMainWindow):
             "url_bugs": about.__url_bugs__
         }
         
-        base_dir_path = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(base_dir_path, 'icons', 'logo.png')
-        
-        show_about_window(data,logo_path)
+        show_about_window(data,self.icon_path)
 
     ############################################################################
     def select_file(self):
@@ -204,20 +209,24 @@ class MainWindow(QMainWindow):
         self.rodando = False
         self.save_button.setEnabled(True)
         
-        if self.thread.output_std != "":
-            msg = QMessageBox(self)
-            msg.setIcon(QMessageBox.critical)
-            msg.setWindowTitle("Error output")
-            msg.setText(self.thread.output_std)
-            msg.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
-            msg.exec()
-            
         if self.thread.output_err != "":
             msg = QMessageBox(self)
-            msg.setIcon(QMessageBox.Information)
-            msg.setWindowTitle("All OK - Work ended!")
+            msg.setIcon(QMessageBox.Critical)
+            msg.setWindowTitle("OCRmyPDF Error")
             msg.setText(self.thread.output_err)
-            msg.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+            msg.setTextInteractionFlags(
+                Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard
+            )
+            msg.exec()
+
+        elif self.thread.output_std != "":
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("OCR completed")
+            msg.setText(self.thread.output_std)
+            msg.setTextInteractionFlags(
+                Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard
+            )
             msg.exec()
 
         
@@ -227,6 +236,16 @@ class MainWindow(QMainWindow):
             return
             
         input_path = self.drag_drop_area.text()
+        
+        
+        if not os.path.isfile(input_path):
+            QMessageBox.warning(
+                self,
+                "Invalid file",
+                "Please select or drag and drop a valid file."
+            )
+            return
+        
         new_pdf = add_ocr_in_name(input_path)
 
         file_path, _ = QFileDialog.getSaveFileName(
@@ -274,9 +293,18 @@ def main():
             create_desktop_menu(overwrite = True)
             create_desktop_file('~/.local/share/applications', overwrite=True)
             return
-    
+       
     app = QApplication(sys.argv)
     app.setApplicationName(about.__package__) # xprop WM_CLASS # *.desktop -> StartupWMClass
+    
+    if not shutil.which("ocrmypdf"):
+        QMessageBox.critical(
+            None,
+            "OCRmyPDF not found",
+            "Please install OCRmyPDF:\n\nsudo apt install ocrmypdf"
+        )
+        sys.exit(1)
+    
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
