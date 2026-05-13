@@ -21,8 +21,6 @@ from simple_ocrmypdf.desktop import create_desktop_menu
 
 #sudo apt install ocrmypdf
 
-
-
 def exec_ocrmypdf(input_path: str, output_path: str) -> tuple[str, str]:
     ocrmypdf_cmd = shutil.which("ocrmypdf")
 
