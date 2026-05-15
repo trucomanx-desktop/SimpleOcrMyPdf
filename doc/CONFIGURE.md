@@ -4,5 +4,5 @@ Simple GUI for ocrmypdf
 
 # Configure
 
-Go to `Configure` to open the `~/config/{MODULE_NAME}/config.json` file. 
+Go to `Configure` to open the `~/config/simple_ocrmypdf/config.json` file. 
 
